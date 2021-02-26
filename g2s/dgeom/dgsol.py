@@ -11,6 +11,8 @@ class DGSOL:
     def __init__(self, distances, nuclear_charges, vectorized_input=True):
         self.nuclear_charges = nuclear_charges
         self.distances = vector_to_square(distances) if vectorized_input else distances
+        self.coords = None
+        self.c_errors = None
 
     def gen_cerror_overview(self):
         print('Error Type, Min, Mean, Max')
@@ -39,7 +41,7 @@ class DGSOL:
         for line in lines:
             if not line.startswith('\n') and len(line) > 30:
                 coords.append([float(n) for n in line.split()])
-        coords = np.array(coords).reshape(n_solutions, n_atoms, 3)
+        coords = np.array(coords).reshape((n_solutions, n_atoms, 3))
         return coords
 
     def solve_distance_geometry(self, outpath, n_solutions=10):
@@ -55,7 +57,7 @@ class DGSOL:
             lowest_errors_idx = np.argsort(errors[:, 2])
             construction_errors.append(errors[lowest_errors_idx[0]])
             coords = self.parse_dgsol_coords(out, n_solutions, n_atoms=len(self.nuclear_charges[i]))
-            mol_coordinates.append(coords[lowest_errors_idx])
+            mol_coordinates.append(coords[lowest_errors_idx[0]])
         self.coords = np.array(mol_coordinates)
         self.c_errors = np.array(construction_errors)
 

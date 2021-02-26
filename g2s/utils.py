@@ -13,15 +13,15 @@ def write_xyz(outname, coords, elements, element_input='nuclear_charges'):
         for xyz, nc in zip(coords, elements):
             outfile.write(f'{elements}\t{xyz[0]}\t{xyz[1]}\t{xyz[2]}\n')
 
+
 def vector_to_square(vectorized_distances):
-    return [squareform(vec_dist) for vec_dist in vectorized_distances]
-
-
-# def bondtype(idx, neighbors, m):
-#     get_bondtype = lambda a, b, c: str(c.GetBondBetweenAtoms(a, b).GetBondType())
-#     a = [bond_to_int[get_bondtype(idx, idxn, m)] for idxn in neighbors]
-#     return a
+    return np.array([squareform(vec_dist) for vec_dist in vectorized_distances])
 
 
 def calculate_distances(coordinates):
     return squareform(pdist(coordinates, lambda a, b: np.sqrt(np.sum((a - b) ** 2))))
+
+
+def filter_nonzero_distances(padded_distances):
+    distances = [padded_distances[i][np.where(padded_distances[i] != 0.0)[0]] for i in range(len(padded_distances))]
+    return np.array(distances)

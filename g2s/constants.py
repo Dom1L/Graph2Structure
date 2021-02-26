@@ -1,5 +1,6 @@
 hartree_to_kcal = 627.5
 
+
 periodic_table = [0, 'H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na', 'Mg', 'Al', 'Si', 'P', 'S',
                   'Cl', 'Ar', 'K', 'Ca', 'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co',
                   'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr', 'Rb', 'Sr', 'Y', 'Zr', 'Nb', 'Mo', 'Tc',
@@ -11,10 +12,6 @@ periodic_table = [0, 'H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na',
                   'Lr', 'Rf', 'Db', 'Sg', 'Bh', 'Hs', 'Mt', 'Ds', 'Rg', 'Cn', 'Uut', 'Uuq', 'Uup', 'Uuh', 'Uus',
                   'Uuo']
 
-bond_to_int = {'SINGLE': 1,
-               'DOUBLE': 2,
-               'TRIPLE': 3,
-               'AROMATIC': 2}
 
 atom_radii = {
     # Main Group
