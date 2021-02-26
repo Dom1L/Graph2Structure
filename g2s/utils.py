@@ -22,6 +22,12 @@ def calculate_distances(coordinates):
     return squareform(pdist(coordinates, lambda a, b: np.sqrt(np.sum((a - b) ** 2))))
 
 
-def filter_nonzero_distances(padded_distances):
-    distances = [padded_distances[i][np.where(padded_distances[i] != 0.0)[0]] for i in range(len(padded_distances))]
-    return np.array(distances)
+def filter_nonzero_distances(padded_distances, nuclear_charges):
+    distances = []
+
+    for i in range(len(nuclear_charges)):
+        n_atoms = len(nuclear_charges[i])
+
+        distmat = vector_to_square([padded_distances[i]])[0]
+        distances.append(distmat[:n_atoms][:, :n_atoms])
+    return np.array(distances, dtype=object)
