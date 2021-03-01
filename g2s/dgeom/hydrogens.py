@@ -33,7 +33,7 @@ def get_hydrogen_positions(positions, distances, n_hydrogens):
     return pos_hydr_1, pos_hydr_2, pos_hydr_3
 
 
-def hydrogen_reconstruction(heavy_atom_coords, predicted_h_distances, heavy_atom_hydrogen_mapping):
+def hydrogen_lebedev_reconstruction(heavy_atom_coords, predicted_h_distances, heavy_atom_hydrogen_mapping):
     hydrogen_coords = []
     for i in range(len(heavy_atom_hydrogen_mapping)):
         n_hydrogens = len(heavy_atom_hydrogen_mapping[i][1])
