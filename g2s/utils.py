@@ -11,7 +11,11 @@ def write_xyz(outname, coords, elements, element_input='nuclear_charges'):
         outfile.write(f'{len(elements)}\n')
         outfile.write('\n')
         for xyz, nc in zip(coords, elements):
-            outfile.write(f'{elements}\t{xyz[0]}\t{xyz[1]}\t{xyz[2]}\n')
+            outfile.write(f'{nc}\t{xyz[0]}\t{xyz[1]}\t{xyz[2]}\n')
+
+
+def combine_heavy_hydrogen_coords(heavy_coords, hydrogen_coords, heavy_nuclear_charges):
+    return np.vstack((heavy_coords, hydrogen_coords)), np.array([*heavy_nuclear_charges, *[1]*len(hydrogen_coords)])
 
 
 def vector_to_square(vectorized_distances):
