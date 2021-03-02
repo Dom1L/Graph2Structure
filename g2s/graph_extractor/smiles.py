@@ -1,8 +1,8 @@
 try:
     from rdkit import Chem
     from rdkit.Chem.rdmolops import GetAdjacencyMatrix
-except ImportError:
-    raise ImportError('Install RDKit if you want to use this feature!')
+except ModuleNotFoundError:
+    raise ModuleNotFoundError('Install RDKit if you want to use this feature!')
 
 from ..constants import periodic_table
 

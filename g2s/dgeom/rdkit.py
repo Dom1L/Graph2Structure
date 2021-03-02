@@ -35,12 +35,12 @@ def graph_to_rdkit(elements, adjacency_matrix):
                 bond_type = Chem.rdchem.BondType.DOUBLE
                 mol.AddBond(node_to_idx[ix], node_to_idx[iy], bond_type)
             elif bond == 3:
-                bond_type = Chem.rdchem.BondType.Triple
+                bond_type = Chem.rdchem.BondType.TRIPLE
                 mol.AddBond(node_to_idx[ix], node_to_idx[iy], bond_type)
 
     # Convert RWMol to Mol object
     mol = mol.GetMol()
-    Chem.SanitizeMol(mol)
+    #Chem.SanitizeMol(mol)
     return mol
 
 
@@ -53,13 +53,13 @@ def embed_hydrogens(adjacency_matrix, nuclear_charges, heavy_atom_coords):
     conf = mol.GetConformer()
 
     # Set Coordinates
-    for i in range(mol.GetNumAtoms()):
+    for i in range(heavy_atom_coords.shape[0]):
         x, y, z = heavy_atom_coords[i]
         conf.SetAtomPosition(i, Point3D(x, y, z))
 
     # Coord map fixes indices/coords during embedding
     coord_map = {i: mol.GetConformer().GetAtomPosition(i) for i in range(len(heavy_atom_coords))}
-    mol_h = Chem.AddHs(mol)
+    mol_h = mol  #Chem.AddHs(mol)
 
     Chem.AllChem.EmbedMolecule(mol_h, coordMap=coord_map, useRandomCoords=True)
 
@@ -67,5 +67,6 @@ def embed_hydrogens(adjacency_matrix, nuclear_charges, heavy_atom_coords):
     embedded_nuclear_charges = [periodic_table.index(atom.GetSymbol()) for atom in mol_h.GetAtoms()]
 
     return embedded_coords, embedded_nuclear_charges
+
 
 

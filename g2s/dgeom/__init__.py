@@ -1,2 +1,2 @@
 from .dgsol import DGSOL
-from . import hydrogens
+from .hydrogens import hydrogen_lebedev_reconstruction

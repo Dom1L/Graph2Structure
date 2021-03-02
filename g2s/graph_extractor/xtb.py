@@ -5,8 +5,8 @@ import tempfile
 try:
     from rdkit import Chem
     from .smiles import get_bo, rdkit_chirality
-except ImportError:
-    raise ImportError('Install RDKit if you want to use this feature!')
+except ModuleNotFoundError:
+    raise ModuleNotFoundError('Install RDKit if you want to use this feature!')
 
 
 def run_xtb(cmd):

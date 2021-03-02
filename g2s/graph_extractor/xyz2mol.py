@@ -2,8 +2,8 @@ from rdkit import Chem
 
 try:
     from xyz2mol import AC2BO, xyz2AC, read_xyz_file, BO2mol, chiral_stereo_check, AC2mol
-except ImportError:
-    raise ImportError('Install xyz2mol software in order to use this parser. '
+except ModuleNotFoundError:
+    raise ModuleNotFoundError('Install xyz2mol software in order to use this parser. '
                       'Visit: https://github.com/jensengroup/xyz2mol')
 
 
