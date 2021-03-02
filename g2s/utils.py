@@ -14,6 +14,21 @@ def write_xyz(outname, coords, elements, element_input='nuclear_charges'):
             outfile.write(f'{nc}\t{xyz[0]}\t{xyz[1]}\t{xyz[2]}\n')
 
 
+def read_xyz(filename, return_string=False):
+    with open(filename, 'r') as infile:
+        lines = infile.readlines()
+    if return_string:
+        return lines[2:]
+    else:
+        elements = []
+        coords = []
+        for line in lines[2:]:
+            atom, x, y, z = line.split()
+            elements.append(atom)
+            coords.append([x, y, z])
+        return elements, np.array(coords).astype('float')
+
+
 def combine_heavy_hydrogen_coords(heavy_coords, hydrogen_coords, heavy_nuclear_charges):
     return np.vstack((heavy_coords, hydrogen_coords)), np.array([*heavy_nuclear_charges, *[1]*len(hydrogen_coords)])
 
