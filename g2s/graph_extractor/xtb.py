@@ -14,7 +14,26 @@ def run_xtb(cmd):
 
 
 def xtb_opt(filepath, outpath=None, opt=True, ncores=1):
+    """
+    Determines xTB input command.
+    Can do singlepoint or optimization
 
+    Parameters
+    ----------
+    filepath: str
+        Path to xyz file.
+    outpath: str
+        Output directory. If None, a temporary directory will be created.
+    opt: bool, default=True
+        Whether to run geometry optimization.
+    ncores: int
+        Amount of cores to use
+
+    Returns
+    -------
+    outpath: str
+        Output directory.
+    """
     if outpath is None:
         outpath = tempfile.mkdtemp()
 
@@ -28,6 +47,32 @@ def xtb_opt(filepath, outpath=None, opt=True, ncores=1):
 
 
 def xtb_graph(filepath, outpath=None, ncores=1, opt=False):
+    """
+    Runs an xTB calculation to determine Wiberg Bond Orders, which
+    can be used to derive a bond order matrix.
+
+    Use with care!
+
+    Parameters
+    ----------
+    filepath: str
+        Path to xyz file.
+    outpath: str
+        Output directory. If None, a temporary directory will be created.
+    opt: bool, default=True
+        Whether to run geometry optimization.
+    ncores: int
+        Amount of cores to use
+
+    Returns
+    -------
+    bond_order_matrix: np.array, shape(n_atoms, n_atoms)
+        Bond order matrix.
+    nuclear_charges: np.array, shape(n_atoms)
+        Nuclear charges.
+    coords: np.array, shape(n_atoms, 3)
+        Cartesian coordinates of the system.
+    """
     xtb_out = xtb_opt(filepath, outpath=outpath, opt=opt, ncores=ncores)
 
     elements, coords = read_xyz(filepath)
@@ -40,6 +85,23 @@ def xtb_graph(filepath, outpath=None, ncores=1, opt=False):
 
 
 def get_bo(wbo_file, natoms):
+    """
+    Parser for xTB wbo files.
+
+    Parameters
+    ----------
+    wbo_file: str
+        xTB wbo file.
+    natoms: int
+        Number of atoms in the system to determine the
+        size of the bond order matrix.
+
+    Returns
+    -------
+    bo_mat: np.array, shape(n_atoms, n_atoms)
+        Bond order matrix.
+
+    """
     with open(wbo_file, 'r') as infile:
         lines = infile.readlines()
 

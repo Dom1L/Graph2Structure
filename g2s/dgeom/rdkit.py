@@ -5,7 +5,22 @@ from ..constants import periodic_table
 
 
 def graph_to_rdkit(elements, adjacency_matrix):
-    # Blatantly adapted from https://stackoverflow.com/questions/51195392/smiles-from-graph
+    """
+    Converts a bond order matrix to an RDkit molecule.
+    Blatantly adapted from https://stackoverflow.com/questions/51195392/smiles-from-graph
+
+    Parameters
+    ----------
+    elements: np.array, shape(n_atoms)
+        Elements of the molecule (not nuclear charges!).
+    adjacency_matrix: np.array, shape(n_atoms, n_atoms)
+        Bond order matrix.
+
+    Returns
+    -------
+    mol: rdkit.mol
+
+    """
 
     # create empty editable mol object
     mol = Chem.RWMol()
@@ -45,6 +60,30 @@ def graph_to_rdkit(elements, adjacency_matrix):
 
 
 def embed_hydrogens(adjacency_matrix, nuclear_charges, heavy_atom_coords):
+    """
+    Computes hydrogen positions using RDkits ETKDG algorithm.
+    During the embedding, heavy atom coordinates are fixed.
+
+    The passed adjacency matrix and nuclear charges must already contain
+    hydrogens!!
+
+    Parameters
+    ----------
+    adjacency_matrix: np.array, shape(n_atoms, n_atoms)
+        Bond order matrix.
+    nuclear_charges: np.array, shape(n_atoms)
+        Nuclear charges of the system.
+    heavy_atom_coords: np.array, shape(n_atoms, 3)
+        Cartesian coordinates.
+
+    Returns
+    -------
+    embedded_coords: np.array, shape(n_atoms, 3)
+        Heavy atom + embedded hydrogen coordinates.
+    embedded_nuclear_charges: np.array, shape(n_atoms)
+        Full list of nuclear charges including hydrogens.
+
+    """
     elements = [periodic_table[nc] for nc in nuclear_charges]
     mol = graph_to_rdkit(elements, adjacency_matrix)
 

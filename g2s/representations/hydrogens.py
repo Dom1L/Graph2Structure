@@ -5,9 +5,36 @@ from .representations import generate_bond_length
 
 
 def local_bondlength(adjacency_matrix, nuclear_charges, distances=None):
+    """
+    Generates a local bond length representation for hydrogen atoms.
+    Only 4 heavy atoms are included. Representation will have size 5.
+
+    On top of the representation, also computes mapping of each heavy atom to hydrogens.
+    The mapping has the following look:
+        tuple: (central_atom_id, attached_hydrogen_ids, neighbour_ids)
+
+    Parameters
+    ----------
+    adjacency_matrix: np.array, shape(n_atoms, n_atoms)
+        Bond order matrix of the system.
+    nuclear_charges: np.array, shape(n_atoms)
+        Nuclear charges.
+    distances: np.array, shape(n_atoms, n_atoms)
+        Interatomic distance matrix.
+
+    Returns
+    -------
+    local_h_repr: np.array, shape (n_hydrogens, 4)
+        Local bond length representation.
+    heavy_hydrogen_mapping: np.array of tuples
+        tuple: (central_atom_id, attached_hydrogen_ids, neighbour_ids)
+    hydrogen_heavy_distances: np.array, shape (n_hydrogens, 5)
+        Distances of closest 4 heavy atoms to a hydrogen. Last distance is the distance between two hydrogens
+        in case multiple hydrogens will need to be attached.
+    """
     for a in adjacency_matrix:
         if np.sum(a) == 0:
-            raise NotImplementedError('Non Bonded Hydrogen Found!')
+            raise AssertionError('Non Bonded Hydrogen Found!')
     n_heavy_atoms = len(np.where(nuclear_charges != 1)[0])
     graph = igraph.Graph().Adjacency(list(adjacency_matrix.astype(float)))
     bond_h_idx = get_hydrogen_neighbours(graph, nuclear_charges)
@@ -40,6 +67,22 @@ def local_bondlength(adjacency_matrix, nuclear_charges, distances=None):
 
 
 def get_hydrogen_neighbours(graph, nuclear_charges):
+    """
+    Get all heavy atoms that have hydrogen attached
+    and their corresponding indices.
+
+    Parameters
+    ----------
+    graph: igraph object
+    nuclear_charges: np.array, shape(n_atoms)
+        Nuclear charges.
+
+    Returns
+    -------
+    bond_h_idx: list
+        Contains tuples of (heavy_atom_idx, hydrogen_idxs).
+
+    """
     heavy_atom_idx = np.where(nuclear_charges != 1)[0]
 
     bond_h_idx = []
@@ -55,6 +98,26 @@ def get_hydrogen_neighbours(graph, nuclear_charges):
 
 
 def map_closest_distance(heavy_atom_index, hydrogen_indices, distances, neighbour_sorting_idx):
+    """
+    Find hydrogen with the closest distance to all heavy atoms.
+
+    Parameters
+    ----------
+    heavy_atom_index: int
+        Index of the central heavy atom.
+    hydrogen_indices: np.array, shape(n_hydrogens)
+        Indices of hydrogens that are attached to a specific atom.
+    distances: np.array, shape(n_atoms, n_atoms)
+        Full distance matrix.
+    neighbour_sorting_idx: np.array, shape(4)
+        Indices of the closest 4 heavy atoms.
+
+    Returns
+    -------
+    h_distances: np.array
+    hydrogen_mapping: tuple
+        (central_atom_id, attached_hydrogen_ids, neighbour_ids)
+    """
     shortest_h_distances = distances[hydrogen_indices][:, neighbour_sorting_idx].sum(axis=1)
     closest_h_idx = hydrogen_indices[np.argmin(shortest_h_distances)]
     h_distances = [distances[heavy_atom_index, closest_h_idx]]
