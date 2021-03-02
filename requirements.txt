@@ -1,0 +1,5 @@
+numpy
+scipy
+python-igraph
+tqdm
+quadpy==0.14.11
