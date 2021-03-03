@@ -4,7 +4,7 @@ import subprocess
 import numpy as np
 from tqdm import tqdm
 
-from ..utils import vector_to_square
+from g2s.utils import vector_to_square
 
 
 class DGSOL:
@@ -79,9 +79,14 @@ class DGSOL:
         n, m = np.triu_indices(distances.shape[1], k=1)
         with open(f'{outpath}/dgsol.input', 'w') as outfile:
             for i, j in zip(n, m):
+                upper = distances[i, j]
+                lower = distances[i, j]
+                if distances[i, j] == 0.0:
+                    upper = 20.
+                    lower = 1.
                 outfile.write(
-                    f'{i + 1:9.0f}{j + 1:10.0f}   {self.to_scientific_notation(distances[i, j])}   '
-                    f'{self.to_scientific_notation(distances[i, j])}\n')
+                    f'{i + 1:9.0f}{j + 1:10.0f}   {self.to_scientific_notation(lower)}   '
+                    f'{self.to_scientific_notation(upper)}\n')
 
     def parse_dgsol_coords(self, path, n_solutions, n_atoms):
         """
