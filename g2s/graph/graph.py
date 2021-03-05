@@ -103,7 +103,7 @@ class GraphCompound(object):
             Sorting method to use. Currently only row-norm implemented.
         """
         self.representation = self.adjacency_matrix
-        if sorting == 'norm_row':
+        if sorting == 'row-norm':
             self.sort_norm()
         self.zero_padding(size)
         self.representation = self.representation[np.triu_indices(self.representation.shape[1], k=1)]
@@ -120,7 +120,7 @@ class GraphCompound(object):
             Sorting method to use. Currently only row-norm implemented.
         """
         self.representation = generate_bond_hop(self.adjacency_matrix, self.nuclear_charges)
-        if sorting == 'norm_row':
+        if sorting == 'row-norm':
             self.sort_norm()
         self.zero_padding(size)
         self.representation = self.representation[np.triu_indices(self.representation.shape[1], k=1)]
@@ -137,7 +137,7 @@ class GraphCompound(object):
             Sorting method to use. Currently only row-norm implemented.
         """
         self.representation = generate_bond_length(self.adjacency_matrix, self.nuclear_charges)
-        if sorting == 'norm_row':
+        if sorting == 'row-norm':
             self.sort_norm()
         self.zero_padding(size)
         self.representation = self.representation[np.triu_indices(self.representation.shape[1], k=1)]
@@ -154,7 +154,7 @@ class GraphCompound(object):
             Sorting method to use. Currently only row-norm implemented.
         """
         self.representation = generate_graph_coulomb_matrix(self.adjacency_matrix, self.nuclear_charges)
-        if sorting == 'norm_row':
+        if sorting == 'row-norm':
             self.sort_norm()
         self.zero_padding(size)
         self.representation = self.representation[np.triu_indices(self.representation.shape[1], k=0)]
