@@ -159,6 +159,7 @@ class DGSOL:
             Number of solutions to compute with DGSOL.
 
         """
+        # mpirun -np {n_solutions}
         cmd = f'dgsol -s{n_solutions} {outpath}/dgsol.input {outpath}/dgsol.output {outpath}/dgsol.summary'
         process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
         output, error = process.communicate()
