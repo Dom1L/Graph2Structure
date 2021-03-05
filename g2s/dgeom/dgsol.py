@@ -143,7 +143,7 @@ class DGSOL:
             lowest_errors_idx = np.argsort(errors[:, 2])
             construction_errors.append(errors[lowest_errors_idx[0]])
             coords = self.parse_dgsol_coords(out, n_solutions, n_atoms=len(self.nuclear_charges[i]))
-            mol_coordinates.append(coords[lowest_errors_idx[0]])
+            mol_coordinates.append(coords[lowest_errors_idx])
         self.coords = np.array(mol_coordinates, dtype=object)
         self.c_errors = np.array(construction_errors)
 

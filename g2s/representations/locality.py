@@ -38,7 +38,7 @@ def get_unique_environments(local_environments, local_idxs, local_distances=None
     if local_distances is not None:
 
         for k in uq_env.keys():
-            uq_env[k]['avg_dist'] = np.array(uq_env[k]).mean(axis=0)
+            uq_env[k]['avg_dist'] = np.array(uq_env[k]['local_dist']).mean(axis=0)
     return uq_env
 
 
