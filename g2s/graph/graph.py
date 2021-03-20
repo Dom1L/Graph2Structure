@@ -1,3 +1,4 @@
+from copy import deepcopy
 import numpy as np
 
 from ..representations.representations import generate_bond_hop, generate_bond_length, generate_graph_coulomb_matrix
@@ -30,7 +31,7 @@ class GraphCompound(object):
         self.natoms = len(nuclear_charge)
         self.adjacency_matrix = np.array(adjacency_matrix).astype(int)
         self.nuclear_charges = np.array(nuclear_charge).astype(int)
-        self.distances = np.array(distances)
+        self.distances = np.array(distances) if distances is not None else distances
 
         # Sort atoms such that heavy atoms are always at the end
         self.resort_atoms()
@@ -59,7 +60,8 @@ class GraphCompound(object):
         sort_idx = np.argsort(-1 * self.nuclear_charges)
         self.adjacency_matrix = self.adjacency_matrix[sort_idx][:, sort_idx]
         self.nuclear_charges = self.nuclear_charges[sort_idx]
-        self.distances = self.distances[sort_idx][:, sort_idx]
+        if self.distances is not None:
+            self.distances = self.distances[sort_idx][:, sort_idx]
 
     def filter_atoms(self, atom_filter='heavy'):
         """
@@ -82,13 +84,14 @@ class GraphCompound(object):
             nonh_idx = np.where(self.nuclear_charges != 1)[0]
             # Does not apply to very small molecules like H2O
             if len(nonh_idx) >= 4:
-                self.full_adjacency_matrix = self.adjacency_matrix.copy()
-                self.full_nuclear_charges = self.nuclear_charges.copy()
+                self.full_adjacency_matrix = deepcopy(self.adjacency_matrix)
+                self.full_nuclear_charges = deepcopy(self.nuclear_charges)
+
                 self.adjacency_matrix = self.adjacency_matrix[nonh_idx][:, nonh_idx]
                 self.nuclear_charges = self.nuclear_charges[nonh_idx]
                 self.filtered = True
                 if self.distances is not None:
-                    self.full_distances = self.distances.copy()
+                    self.full_distances = deepcopy(self.distances)
                     self.distances = self.distances[nonh_idx][:, nonh_idx]
 
     def generate_bond_order(self, size=9, sorting="row-norm"):
@@ -200,12 +203,14 @@ class GraphCompound(object):
         self.adjacency_matrix = self.adjacency_matrix[idx_list][:, idx_list]
         self.sorting_idxs = idx_list
         if self.filtered:
-            self.full_adjacency_matrix = self.full_adjacency_matrix[idx_list][:, idx_list]
-            self.full_nuclear_charges = self.full_nuclear_charges[idx_list]
+            atom_idxs = np.arange(len(self.nuclear_charges), len(self.full_nuclear_charges))
+            full_idx = np.array([*idx_list, *atom_idxs])
+            self.full_adjacency_matrix = self.full_adjacency_matrix[full_idx][:, full_idx]
+            self.full_nuclear_charges = self.full_nuclear_charges[full_idx]
         if self.distances is not None:
             self.distances = self.distances[idx_list][:, idx_list]
             if self.filtered:
-                self.full_distances = self.full_distances[idx_list][:, idx_list]
+                self.full_distances = self.full_distances[full_idx][:, full_idx]
 
     def zero_padding(self, size):
         """
