@@ -19,6 +19,13 @@ def test_conversion(filepath):
     assert np.sum(m_bo - adj[reverse_map, :][:, reverse_map]) == 0.
 
 
+
+def test_confgen(filepath):
+    adj, nuclear_charges, coords = xyz2mol_graph(filepath)
+    elements = [periodic_table[nc] for nc in nuclear_charges]
+    graph, reverse_map, bkp_adj = graph_to_molass(adj, elements, debug=True)
+
+
 if __name__ == '__main__':
     test_mols = sorted(glob('/data/lemm/g2s/const_isomers/*.xyz'))
 
