@@ -29,6 +29,29 @@ def test_distance_bounds():
 
     new_coords = scm.dg.generate_g2s_conformation(graph, distances[reverse_map, :][:, reverse_map], 13)*0.529177
 
+
+
+def test_molassembler(filepaths):
+    bo_mats = []
+    nuclear_charges = []
+    ci_coords = []
+    ci_dists = []
+    for f in tqdm(filepaths):
+        b, nc, coords = xyz2mol_graph(f)
+        bo_mats.append(b)
+        nuclear_charges.append(nc)
+        ci_coords.append(coords)
+        ci_dists.append(calculate_distances(coords))
+
+    configuration = {'partiality':scm.dg.Partiality.FourAtom, 'refinement_step_limit':10000,
+                     'refinement_gradient_target':1e-5, 'spatial_model_loosening':1.0, 'fixed_positions':[]}
+
+    molass = Molassembler(bo_mats, ci_dists, nuclear_charges, vectorized_input=False)
+    molass.convert_molecules()
+    molass.solve_distance_geometry()
+
+
+
 if __name__ == '__main__':
     test_mols = sorted(glob('/data/lemm/g2s/const_isomers/*.xyz'))
 
