@@ -7,6 +7,9 @@ from scine_utilities import ElementType
 
 from g2s.utils import vector_to_square
 
+scm.Options.chiral_state_preservation = scm.ChiralStatePreservation.Unique#getattr(scm.ChiralStatePreservation, "None")
+ #scm.ChiralStatePreservation.RandomFromMultipleBest
+
 scm_elements = {'H': ElementType.H,
                 'C': ElementType.C,
                 'O': ElementType.O,
@@ -54,6 +57,14 @@ class Molassembler:
             self.reverse_map.append(scm_mapping)
             self.scm_graphs.append(scm_graph)
 
+    def scm_config(self):
+        conf = scm.dg.Configuration()
+        conf.partiality = scm.dg.Partiality.All
+        conf.refinement_step_limit = 10000
+        conf.refinement_gradient_target = 1e-05
+        conf.spatial_model_loosening = 1.5
+        return conf
+
     def solve_distance_geometry(self, n_conformers=1, seed=42):
         gen_coords = []
         tries = []
@@ -66,9 +77,9 @@ class Molassembler:
             counter = 0
             while len(coords) < n_conformers:
             # coords = np.array([scm.dg.generate_g2s_conformation(g, dist, seed+i) * self.bohr_to_angstrom for i in range(n_conformers)])
-                conf = scm.dg.generate_g2s_conformation(g, dist, np.random.randint(1e6))
+                conf = scm.dg.generate_g2s_conformation(g, dist, np.random.randint(1e6), self.scm_config())
                 if not isinstance(conf, scm.dg.Error):
-                    coords.append(conf*self.bohr_to_angstrom)
+                    coords.append(conf)
                 counter += 1
                 if counter >= 1000:
                     print('Max tries exceeded')

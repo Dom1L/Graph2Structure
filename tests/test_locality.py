@@ -8,9 +8,9 @@ from g2s.representations.locality import get_local_environment, construct_sparse
 
 
 
-test_mols = sorted(glob('/Users/c0uch1/github/Graph2Structure/tests/test_files/local_test/*.xyz'))
+test_mols = sorted(glob('tests/test_files/local_test/*.xyz'))
 
-bond_order_matrix, nuclear_charges, coords = xyz2mol_graph(test_mols[1])
+bond_order_matrix, nuclear_charges, coords = xyz2mol_graph(test_mols[2])
 
 distances = g2s.utils.calculate_distances(coords)
 gc = g2s.GraphCompound(bond_order_matrix, nuclear_charges, distances)
