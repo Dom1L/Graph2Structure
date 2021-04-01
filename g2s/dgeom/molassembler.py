@@ -45,16 +45,36 @@ class Molassembler:
         self.reverse_map = None
         self.scm_graphs = None
         self.coords = None
+        self.revert_indices = None
 
     def convert_molecules(self):
         self.reverse_map = []
         self.scm_graphs = []
+        self.revert_indices = []
         for b, nc in tqdm(zip(self.bo_mat, self.nuclear_charges), total=len(self.bo_mat)):
             scm_graph, scm_mapping = self.graph_to_scm(b, nc, debug=False)
             self.reverse_map.append(scm_mapping)
             self.scm_graphs.append(scm_graph)
+            self.revert_indices.append(np.argsort(scm_mapping))
 
-    def solve_distance_geometry(self, n_conformers=1, seed=42):
+    def set_stereochem(self, stereocenters):
+        stereo_state = {'S': 0,
+                        'R': 1}
+
+        for i, sc in enumerate(stereocenters):
+            if sc:
+                stereo = [(list(self.reverse_map[i]).index(s[0]), stereo_state[s[1]]) for s in sc]
+                for s in stereo:
+                    try:
+                        self.scm_graphs[i].assign_stereopermutator(s[0], s[1])
+                    except:
+                        continue
+
+    def solve_distance_geometry(self, n_conformers=1, seed=42, max_attempts=20):
+        config = scm.dg.Configuration()
+        config.partiality = scm.dg.Partiality.All
+        config.spatial_model_loosening = 1.0
+
         gen_coords = []
         tries = []
         for mol_id in tqdm(range(len(self.scm_graphs))):
@@ -66,11 +86,11 @@ class Molassembler:
             counter = 0
             while len(coords) < n_conformers:
             # coords = np.array([scm.dg.generate_g2s_conformation(g, dist, seed+i) * self.bohr_to_angstrom for i in range(n_conformers)])
-                conf = scm.dg.generate_g2s_conformation(g, dist, np.random.randint(1e6))
+                conf = scm.dg.generate_g2s_conformation(g, dist, np.random.randint(1e6), config)
                 if not isinstance(conf, scm.dg.Error):
-                    coords.append(conf*self.bohr_to_angstrom)
+                    coords.append(conf[self.revert_indices[mol_id]]*self.bohr_to_angstrom)
                 counter += 1
-                if counter >= 1000:
+                if counter >= max_attempts:
                     print('Max tries exceeded')
                     coords.append(np.zeros((len(dist), 3)))
             gen_coords.append(np.array(coords)[:, np.argsort(r_map)])
