@@ -43,9 +43,6 @@ def test_molassembler(filepaths):
         ci_coords.append(coords)
         ci_dists.append(calculate_distances(coords))
 
-    configuration = {'partiality':scm.dg.Partiality.FourAtom, 'refinement_step_limit':10000,
-                     'refinement_gradient_target':1e-5, 'spatial_model_loosening':1.0, 'fixed_positions':[]}
-
     molass = Molassembler(bo_mats, ci_dists, nuclear_charges, vectorized_input=False)
     molass.convert_molecules()
     molass.solve_distance_geometry()
