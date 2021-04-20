@@ -5,6 +5,7 @@ import numpy as np
 from tqdm import tqdm
 
 from g2s.utils import vector_to_square
+from g2s.constants import vdw_radii
 
 
 class DGSOL:
@@ -58,7 +59,7 @@ class DGSOL:
         num = '{:.12f}E{:+03d}'.format(float(a) / 10, int(b) + 1)
         return num[1:]
 
-    def write_dgsol_input(self, distances, outpath):
+    def write_dgsol_input(self, distances, outpath, boundary=False, nuclear_charges=None):
         """
         Input file writer for DGSOL.
         Basically writes 4 columns such as
@@ -74,6 +75,10 @@ class DGSOL:
             Vectorized distance matrix.
         outpath: str
             Directory to save input file
+        boundary: bool
+            Upper and lower boundaries for sparse distance matrices.
+            Lower boundaries are computed via vdW radii.
+        nuclear_charges: list or None
 
         """
         n, m = np.triu_indices(distances.shape[1], k=1)
@@ -82,8 +87,11 @@ class DGSOL:
                 upper = distances[i, j]
                 lower = distances[i, j]
                 if distances[i, j] == 0.0:
-                    upper = 20.
-                    lower = 1.
+                    if boundary:
+                        upper = 20.
+                        lower = 1. if nuclear_charges is None else vdw_radii[nuclear_charges[i]] + vdw_radii[nuclear_charges[j]]
+                    else:
+                        continue
                 outfile.write(
                     f'{i + 1:9.0f}{j + 1:10.0f}   {self.to_scientific_notation(lower)}   '
                     f'{self.to_scientific_notation(upper)}\n')
