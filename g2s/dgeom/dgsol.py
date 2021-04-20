@@ -85,7 +85,7 @@ class DGSOL:
         with open(f'{outpath}/dgsol.input', 'w') as outfile:
             for i, j in zip(n, m):
                 upper = distances[i, j]
-                lower = distances[i, j]
+                lower = distances[j, i]
                 if distances[i, j] == 0.0:
                     if boundary:
                         upper = 20.
