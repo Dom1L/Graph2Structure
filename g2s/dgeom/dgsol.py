@@ -126,7 +126,7 @@ class DGSOL:
         coords = np.array(coords).reshape((n_solutions, n_atoms, 3))
         return coords
 
-    def solve_distance_geometry(self, outpath, n_solutions=10):
+    def solve_distance_geometry(self, outpath, n_solutions=10, boundary=False):
         """
         Interface to solve distance geometry problem.
         Writes input for DGSOL, run's DGSOL and parses coordinates.
@@ -145,7 +145,7 @@ class DGSOL:
         for i, ids in tqdm(enumerate(mol_ids), total=len(mol_ids)):
             out = f'{outpath}/{ids:04}'
             os.makedirs(out, exist_ok=True)
-            self.write_dgsol_input(distances=self.distances[i], outpath=out)
+            self.write_dgsol_input(distances=self.distances[i], outpath=out, boundary=boundary, nuclear_charges=self.nuclear_charges[i])
             self.run_dgsol(out, n_solutions=n_solutions)
             errors = self.parse_dgsol_errors(out)
             lowest_errors_idx = np.argsort(errors[:, 2])
