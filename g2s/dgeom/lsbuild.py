@@ -3,6 +3,8 @@ from scipy.spatial.distance import squareform
 from g2s.utils import calculate_distances, read_xyz
 from scipy.optimize import minimize
 
+from numba import jit
+
 
 def lsbuild(boundary_matrix, _lambda=1.0, _tau=1e-5):
     n_atoms = boundary_matrix.shape[0]
@@ -12,12 +14,11 @@ def lsbuild(boundary_matrix, _lambda=1.0, _tau=1e-5):
     base_coords = embed_base(distance_matrix[base_ids][:, base_ids])
     n_base_atoms = base_coords.shape[0]
     base_row, base_col = np.triu_indices(n_base_atoms, k=1)
-
-    res = minimize(opt_func, base_coords, method='L-BFGS-B',
+    res = minimize(opt_func, base_coords, method='BFGS',
                    args=(distance_matrix[(base_col, base_row)],
                          distance_matrix[(base_row, base_col)],
                          _lambda, _tau,
-                         n_base_atoms, (base_row, base_col)))
+                         n_base_atoms, base_row, base_col, _lambda * (distance_matrix[(base_col, base_row)] - distance_matrix[(base_row, base_col)])))
     coords[base_ids, :] = res.x.reshape(n_base_atoms, 3)
 
     remaining = np.arange(n_base_atoms, n_atoms)
@@ -32,11 +33,11 @@ def lsbuild(boundary_matrix, _lambda=1.0, _tau=1e-5):
         coords[i, :] = new_coords
         base_d = distance_matrix[base_ids][:, base_ids]
         base_row, base_col = np.triu_indices(n_base_atoms, k=1)
-        res = minimize(opt_func, coords[base_ids, :], method='L-BFGS-B',
+        res = minimize(opt_func, coords[base_ids, :], method='BFGS',
                        args=(base_d[(base_col, base_row)],
                              base_d[(base_row, base_col)],
                              _lambda, _tau,
-                             n_base_atoms, (base_row, base_col)))
+                             n_base_atoms, base_row, base_col, _lambda * (base_d[(base_col, base_row)] - base_d[(base_row, base_col)])))
         coords[base_ids, :] = res.x.reshape(n_base_atoms, 3)
     return coords
 
@@ -58,17 +59,24 @@ def embed_base(distance_matrix):
     return np.dot(u_tilde, np.sqrt(e_tilde))
 
 
-def opt_func(x, dist_l, dist_u, _lambda, _tau, n_atoms, triu):
+@jit(nopython=True, fastmath=True)
+def opt_func(x, dist_l, dist_u, _lambda, _tau, n_atoms, row, col, cofactor):
     x = x.reshape(n_atoms, 3)
-    coord_dist = x[None, :] - x[:, None]
-    coord_dist = np.sum(coord_dist[triu] ** 2, axis=1)
-    return np.sum(_lambda * (dist_l - dist_u) +
-                  omega_eq(coord_dist, dist_l, _lambda, _tau) +
-                  omega_eq(coord_dist, dist_u, _lambda, _tau))
+    _coord_dist = np.expand_dims(x, 0) - np.expand_dims(x, 1)
+    # coord_dist = np.sum(_coord_dist[row, col] ** 2, axis=1)
+
+    coord_dist = []
+    for r, c in zip(row, col):
+        coord_dist.append(np.sum(_coord_dist[r, c] ** 2))
+    coord_dist = np.array(coord_dist)
+    b = np.sqrt((_lambda ** 2) * (dist_l - np.sqrt(coord_dist + (_tau ** 2))) ** 2 + _tau ** 2)
+    c = np.sqrt((_lambda ** 2) * (dist_u - np.sqrt(coord_dist + (_tau ** 2))) ** 2 + _tau ** 2)
+    return np.sum(cofactor+b+c)
 
 
-def omega_eq(x, c, _lambda, _tau):
-    return np.sqrt((_lambda ** 2) * (c - np.sqrt(x + (_tau ** 2))) ** 2 + _tau ** 2)
+# # @jit(nopython=True)
+# def omega_eq(x, c, _lambda, _tau):
+#     return
 
 
 def get_undetermined(base_coords, distance_matrix, unknown_idx, base_ids):
