@@ -113,6 +113,8 @@ def sample_bases(outdir, sparse_distances, nuclear_charges, t=0.5, seed=1337):
         potential_bases.append((bases, setB))
 
     for i in tqdm(range(len(sparse_distances))):
+        if os.path.isfile(f'{outdir}/{i:04d}/lsbuild_conf_{len(potential_bases[i][1])}.xyz'):
+            continue
         coords = [lsbuild(sparse_distances[i], nuclear_charges[i],
                           lstB=potential_bases[i][0][j], setB=potential_bases[i][1][j], t=t)['x'] for
                   j in range(len(potential_bases[i]))]
@@ -124,6 +126,8 @@ def sample_bases(outdir, sparse_distances, nuclear_charges, t=0.5, seed=1337):
 
 def sample_t(outdir, sparse_distances, nuclear_charges):
     for i in tqdm(range(len(sparse_distances))):
+        if os.path.isfile(f'{outdir}/{i:04d}/lsbuild_conf_9.xyz'):
+            continue
         coords = [lsbuild(sparse_distances[i], nuclear_charges[i],
                           lstB=None, setB=None, t=t)['x'] for t in np.arange(0.1, 1.0, 0.1)]
 
@@ -135,11 +139,12 @@ def sample_t(outdir, sparse_distances, nuclear_charges):
 def sample_random(outdir, sparse_distances, nuclear_charges, n_confs, seed=1337):
     for i in tqdm(range(len(sparse_distances))):
         np.random.seed(seed)
-
         n_atoms = len(nuclear_charges[i])
         pb = [[k, *np.where(sparse_distances[i][k] != 0.)[0]] for k in range(n_atoms) if np.where(sparse_distances[i][k] != 0.)[0].shape[0] >= 4]
         coords = []
         for j in range(n_confs):
+            if os.path.isfile(f'{outdir}/{i:04d}/lsbuild_conf_{j}.xyz'):
+                continue
             k = np.random.randint(0, len(pb))
             t = np.random.uniform(0.1, 1.0)
             base = sorted([k, *np.random.choice(pb[k][1:], 3, replace=False)])
@@ -148,6 +153,8 @@ def sample_random(outdir, sparse_distances, nuclear_charges, n_confs, seed=1337)
             coords.append(lsbuild(sparse_distances[i], nuclear_charges[i], lstB=base, setB=setB, t=t)['x'])
 
         os.makedirs(f'{outdir}/{i:04d}', exist_ok=True)
+        if not coords:
+            continue
         for j in range(len(coords)):
             g2s.utils.write_xyz(f'{outdir}/{i:04d}/lsbuild_conf_{j}.xyz', coords[j], nuclear_charges[i])
 

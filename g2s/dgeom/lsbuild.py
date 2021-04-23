@@ -396,7 +396,11 @@ def solveLSTSQ(G, setB, x, i, t=0.5):
         else:
             A[k - 1, :] = x0 - xj
             b[k - 1] = (aij - ai0) / 2.0
-    x[i] = lstsq(A, b, rcond=None)[0]
+    ans = lstsq(A, b, rcond=None)[0]
+    mean_ans = np.mean(ans)
+    if mean_ans > 1e3 or mean_ans < -1e3:
+        ans = np.zeros(3)
+    x[i] = ans
 
 
 def solveNLP(G, setB, lstB, x, check, tm, tau=1e-5, lam=0.5):
@@ -416,8 +420,8 @@ def solveNLP(G, setB, lstB, x, check, tm, tau=1e-5, lam=0.5):
     # convert list of 3D points to a single array
     y = x[lstB].reshape(3 * len(lstB))
     if check:
-        checkDiff(funNLP, y/1e4, args=(tau, lam, L, U))
-    ans = minimize(funNLP, y/1e4, args=(tau, lam, L, U), method='BFGS', jac=True)
+        checkDiff(funNLP, y, args=(tau, lam, L, U))
+    ans = minimize(funNLP, y, args=(tau, lam, L, U), method='BFGS', jac=True)
     # retrieve solution
     for k, i in enumerate(lstB):
         x[i] = ans.x[(3 * k):(3 * (k + 1))]
