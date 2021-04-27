@@ -49,8 +49,9 @@ def train_cholesky(kernel, labels, verbose=True):
         Kernel Ridge Regression alpha coefficients.
     """
     alphas = []
+    cho_kernel = cho_factor(kernel)
     for i in trange(labels.shape[1], disable=not verbose):
-        alphas.append(cho_solve(cho_factor(kernel), labels[:, i]))
+        alphas.append(cho_solve(cho_kernel, labels[:, i]))
     return np.array(alphas)
 
 
