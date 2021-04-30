@@ -162,13 +162,23 @@ class GraphCompound(object):
         self.zero_padding(size)
         self.representation = self.representation[np.triu_indices(self.representation.shape[1], k=0)]
 
-    def generate_local_hydrogen_matrix(self):
+    def generate_local_hydrogen_matrix(self, n_neighs=5, local_env=False):
         """
         Generates a local bond length representation for hydrogen atoms.
-        Only 4 heavy atoms are included. Representation will have size 5.
+        Only 4 heavy atoms are included.
+        The number of neighbours considered in the representation can be tuned via the n_neighs argument.
         In case the molecule has less than 4 heavy atoms, no representation will be computed.
 
         On top of the representation, also computes mapping of each heavy atom to hydrogens.
+
+        Parameters
+        ----------
+        n_neighs: int (default=5)
+            Number of neighbours to include in the representation. Will always apply zero-padding if not enough
+            neighbours are available.
+        local_env: bool (default=True)
+            If True, the hydrogen representation only includes bond length distances of heavy atoms to a target hydrogen.
+            If False, the representation includes bond length distances of all neighboring atoms to all.
         """
         n_heavy_atoms = len(np.where(self.nuclear_charges != 1)[0])
         # Does not apply to very small molecules like H2O
@@ -182,10 +192,10 @@ class GraphCompound(object):
             adjacency, nuclear_charges, distances = self.adjacency_matrix, self.nuclear_charges, self.distances
 
         if distances is None:
-            local_h_repr, heavy_hydrogen_mapping = local_bondlength(adjacency, nuclear_charges, distances)
+            local_h_repr, heavy_hydrogen_mapping = local_bondlength(adjacency, nuclear_charges, distances, n_neighs, local_env)
             hydrogen_heavy_distances = None
         else:
-            local_h_repr, heavy_hydrogen_mapping, hydrogen_heavy_distances = local_bondlength(adjacency, nuclear_charges, distances)
+            local_h_repr, heavy_hydrogen_mapping, hydrogen_heavy_distances = local_bondlength(adjacency, nuclear_charges, distances, n_neighs, local_env)
 
         self.hydrogen_representations = local_h_repr
         self.heavy_hydrogen_mapping = heavy_hydrogen_mapping

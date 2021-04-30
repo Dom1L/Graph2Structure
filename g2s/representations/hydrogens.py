@@ -4,10 +4,11 @@ import numpy as np
 from .representations import generate_bond_length
 
 
-def local_bondlength(adjacency_matrix, nuclear_charges, distances=None):
+def local_bondlength(adjacency_matrix, nuclear_charges, distances=None, n_neighs=5, local_env=True):
     """
     Generates a local bond length representation for hydrogen atoms.
-    Only 4 heavy atoms are included. Representation will have size 5.
+    Only 4 heavy atom distances are considered.
+    The number of neighbours considered in the representation can be tuned via the n_neighs argument.
 
     On top of the representation, also computes mapping of each heavy atom to hydrogens.
     The mapping has the following look:
@@ -21,6 +22,12 @@ def local_bondlength(adjacency_matrix, nuclear_charges, distances=None):
         Nuclear charges.
     distances: np.array, shape(n_atoms, n_atoms)
         Interatomic distance matrix.
+    n_neighs: int (default=5)
+        Number of neighbours to include in the representation. Will always apply zero-padding if not enough
+        neighbours are available.
+    local_env: bool (default=True)
+        If True, the hydrogen representation only includes bond length distances of heavy atoms to a target hydrogen.
+        If False, the representation includes bond length distances of all neighboring atoms to all.
 
     Returns
     -------
@@ -49,16 +56,31 @@ def local_bondlength(adjacency_matrix, nuclear_charges, distances=None):
 
         # Sort by bond length distances to get the closest neighbours
         # Results in a representation vector of size 4
-        neighbour_sorting_idx = np.argsort(atomic_representation)[:4]
-        local_h_repr.append(atomic_representation[neighbour_sorting_idx])
+        closest_neighbour_sorting_idx = np.argsort(atomic_representation)[:4]
+        neighbour_sorting_idx = np.argsort(atomic_representation)[:n_neighs]
+
+        if local_env:
+            padded_representation = np.zeros(n_neighs+1)
+            n_hneighs = neighbour_sorting_idx.shape[0]
+            padded_representation[:n_hneighs] = atomic_representation[neighbour_sorting_idx]
+            local_h_repr.append(padded_representation)
+        else:
+            atomic_env_idxs = np.array([hydrogen_indices[0], *neighbour_sorting_idx])
+            atomic_representation = bond_length_matrix[atomic_env_idxs][:, atomic_env_idxs]
+            norm_sort_idx = np.argsort(np.linalg.norm(atomic_representation, axis=1))
+            atomic_representation = atomic_representation[norm_sort_idx][:, norm_sort_idx]
+            n_hneighs = atomic_representation.shape[0]
+            padded_representation = np.zeros((n_neighs+1, n_neighs+1))
+            padded_representation[:n_hneighs, :n_hneighs] = atomic_representation
+            local_h_repr.append(padded_representation[np.triu_indices(padded_representation.shape[1], k=1)])
 
         if distances is not None:
             h_distances, hydrogen_mapping = map_closest_distance(heavy_atom_index, hydrogen_indices,
-                                                                 distances, neighbour_sorting_idx)
+                                                                 distances, closest_neighbour_sorting_idx)
             heavy_hydrogen_mapping.append(hydrogen_mapping)
             hydrogen_heavy_distances.append(h_distances)
         else:
-            heavy_hydrogen_mapping.append((heavy_atom_index, hydrogen_indices, neighbour_sorting_idx[1:]))
+            heavy_hydrogen_mapping.append((heavy_atom_index, hydrogen_indices, closest_neighbour_sorting_idx[1:]))
 
     if distances is not None:
         return np.array(local_h_repr), np.array(heavy_hydrogen_mapping), np.array(hydrogen_heavy_distances)
