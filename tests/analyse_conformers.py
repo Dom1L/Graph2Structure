@@ -1,4 +1,5 @@
 import os
+import pickle
 from glob import glob
 
 import numpy as np
@@ -46,6 +47,39 @@ def get_fchlsim(filepath):
     return sim_fchl
 
 
+def get_ref_sim(filepaths, reference):
+    confs = sorted(glob(f'{filepaths}/*.xyz'))
+    n_confs = len(confs)
+    rmsds = [calc_rmsd(confs[i], reference) for i in range(n_confs)]
+
+    coords = []
+    for c in confs:
+        nuclear_charges, crd = read_xyz(c)
+        coords.append(crd)
+    coords = np.array(coords)
+    ref_nuclear_charges, ref_coords = read_xyz(reference)
+    ref_coords = np.array(ref_coords)
+
+    sigma = 2
+    nuclear_charges = [periodic_table.index(e) for e in nuclear_charges]
+    ref_nuclear_charges = np.array([periodic_table.index(e) for e in ref_nuclear_charges])
+    noh_idx = np.where(ref_nuclear_charges != 1)[0]
+    ref_coords = ref_coords[noh_idx]
+    ref_nuclear_charges = ref_nuclear_charges[noh_idx]
+
+    ref_fchl = qml.generate_fchl_acsf(ref_nuclear_charges, ref_coords, pad=len(nuclear_charges))
+
+    fchl_rep = []
+    for conf in coords:
+        fchl_rep.append(qml.generate_fchl_acsf(nuclear_charges, conf, pad=len(nuclear_charges)))
+
+    sim_fchl = get_global_kernel(np.array(fchl_rep), np.array([ref_fchl]),
+                                 np.array([list(nuclear_charges)] * len(fchl_rep)),
+                                 np.array([list(ref_nuclear_charges)]), sigma)
+
+    return rmsds, sim_fchl
+
+
 def count_duplicates(sim_fchl, cutoff=0.98, higher=True):
     n_confs = sim_fchl.shape[0]
     f = sim_fchl[np.triu_indices(n_confs, k=1)]
@@ -75,7 +109,8 @@ def count_duplicates(sim_fchl, cutoff=0.98, higher=True):
     u_sim = sim_fchl[uidxs, :][:, uidxs]
     return u_confs, u_sim
 
-def calc_similarities(path):
+
+def calc_similarities(path, ref_structures):
     envs = ['4nbh_env', '5nbh_env']
     modes = ['loose_bounds', 'no_bounds', 'tight_bounds']
     sampling = ['base_sampling','random_sampling', 't_sampling']
@@ -93,13 +128,19 @@ def calc_similarities(path):
                         'tight_bounds': {'base_sampling': [], 'random_sampling': [], 't_sampling': []}
                     }
     }
-    for e in envs:
-        for m in modes:
-            for s in sampling:
+    for e in tqdm(envs):
+        for m in tqdm(modes, leave=False):
+            for s in tqdm(sampling, leave=False):
                 conf_paths = sorted(glob(f'{path}/{e}/{m}/{s}/*'))
-                for c in tqdm(conf_paths):
+                for i, c in tqdm(enumerate(conf_paths), total=len(conf_paths), leave=False):
                     _rmsds = get_rmsd(c)
                     fchl_sim = get_fchlsim(c)
-                    sim_dict[e][m][s].append([_rmsds, fchl_sim])
+                    ref_rmsd, ref_fchl = get_ref_sim(c, ref_structures[i])
+                    sim_dict[e][m][s].append([_rmsds, fchl_sim, ref_rmsd, ref_fchl])
+
+    return sim_dict
 
 
+if __name__ == '__main__':
+    bench_results = calc_similarities('/data/lemm/g2s/conf_sampling', sorted(glob('/data/lemm/g2s/const_isomers/*.xyz')))
+    pickle.dump(bench_results, open('/data/lemm/g2s/conf_sampling_results.pkl', 'wb'))
