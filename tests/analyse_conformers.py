@@ -1,5 +1,6 @@
 import os
 from glob import glob
+import pickle
 
 import numpy as np
 os.environ["OMP_NUM_THREADS"] = str(24)
@@ -72,8 +73,8 @@ def count_duplicates(sim_fchl, cutoff=0.98, higher=True):
 
     u_confs = len(dupl_dict.keys())
     uidxs = np.array(list(dupl_dict.keys()))
-    u_sim = sim_fchl[uidxs, :][:, uidxs]
-    return u_confs, u_sim
+    # u_sim = sim_fchl[uidxs, :][:, uidxs]
+    return u_confs, n_confs, uidxs
 
 def calc_similarities(path):
     envs = ['4nbh_env', '5nbh_env']
@@ -103,3 +104,37 @@ def calc_similarities(path):
                     sim_dict[e][m][s].append([_rmsds, fchl_sim])
 
 
+def filter_duplicates(filepath, path):
+    filepath = '/data/lemm/g2s/conf_sampling_results.pkl'
+    path = '/data/lemm/g2s/conf_sampling'
+    sim_dict = pickle.load(open(filepath, 'rb'))
+
+    envs = ['4nbh_env', '5nbh_env']
+    modes = ['loose_bounds', 'no_bounds', 'tight_bounds']
+    sampling = ['base_sampling','random_sampling', 't_sampling']
+
+    uq_dict = {'4nbh_env':
+                    {
+                        'loose_bounds': {'base_sampling':[],'random_sampling':[], 't_sampling':[]},
+                        'no_bounds':{'base_sampling':[],'random_sampling':[], 't_sampling':[]},
+                        'tight_bounds':{'base_sampling':[],'random_sampling':[], 't_sampling':[]}
+                    },
+                '5nbh_env':
+                    {
+                        'loose_bounds': {'base_sampling': [], 'random_sampling': [], 't_sampling': []},
+                        'no_bounds': {'base_sampling': [], 'random_sampling': [], 't_sampling': []},
+                        'tight_bounds': {'base_sampling': [], 'random_sampling': [], 't_sampling': []}
+                    }
+    }
+    for e in envs:
+        for m in modes:
+            for s in sampling:
+                for c in tqdm(sim_dict[e][m][s]):
+                    rmsds, fchl_sim, ref_rmsd, ref_fchl = c
+                    u_confs, n_confs, uidxs = count_duplicates(fchl_sim, cutoff=0.98, higher=True)
+
+                    uq_dict[e][m][s].append([rmsds[uidxs][:, uidxs], fchl_sim[uidxs][:, uidxs],
+                                             np.array(ref_rmsd)[uidxs], ref_fchl[0][uidxs], u_confs, n_confs])
+
+
+    pickle.dump(uq_dict, open('/data/lemm/g2s/conf_sampling_results_unique.pkl', 'wb'))
