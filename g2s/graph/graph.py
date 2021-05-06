@@ -47,7 +47,7 @@ class GraphCompound(object):
         self.full_distances = None
 
         # Hydrogen representation, distances and mapping
-        self.hydrogen_representations = np.zeros((1, 4))
+        self.hydrogen_representations = np.zeros((1, 15))
         self.heavy_hydrogen_mapping = empty_array
         self.hydrogen_heavy_distances = np.zeros((1, 5))
 
@@ -183,6 +183,12 @@ class GraphCompound(object):
         n_heavy_atoms = len(np.where(self.nuclear_charges != 1)[0])
         # Does not apply to very small molecules like H2O
         if n_heavy_atoms < 4:
+            if local_env:
+                # In this case +1 due to n_neighs + 1 hydrogen-hydrogen distance
+                self.hydrogen_representations = np.zeros((1, n_neighs+1))
+            else:
+                entries, _ = np.triu_indices(n_neighs+1, k=1)
+                self.hydrogen_representations = np.zeros((1, len(entries)))
             return
 
         # Always use the full matrix!
