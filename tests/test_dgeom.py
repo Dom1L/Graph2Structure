@@ -15,7 +15,7 @@ from g2s.dgeom.dgsol import DGSOL
 from g2s.dgeom.molassembler import Molassembler
 from g2s.graph_extractor.xyz2mol import xyz2mol_graph
 
-# from lsbuild import lsbuild
+from lsbuild import lsbuild
 
 from gtg.reconstruction.rmsd import calc_rmsd
 
@@ -208,6 +208,93 @@ def test():
     for i in range(len(sqr_dists)):
         triu = np.triu_indices(9, k =1)
         maes.append(mae(sqr_dists[i][triu], vec_dist[i][triu]))
+
+
+def test_scaling():
+    alkanes = sorted(glob('/home/lem/github/Graph2Structure/tests/test_files/C*0.xyz'))
+    import time
+    distances = []
+    nuclear_charges = []
+    sparse = True
+    for alk in alkanes:
+        elements, xyz = read_xyz(alk)
+        dist = calculate_distances(xyz)
+        nc = np.array([g2s.constants.periodic_table.index(e) for e in elements])
+        heavy_idx = np.where(nc != 1)[0]
+        dist = dist[heavy_idx, :][:, heavy_idx]
+        if sparse:
+            dist[np.where(dist >= 6.0)] = 0.0
+        distances.append(dist)
+        nuclear_charges.append(nc[heavy_idx])
+
+    outpath = 'alkane_test'
+    for i in range(len(distances)):
+        dgsol_start = time.time()
+        dgsol = DGSOL(distances[i][None,...], nuclear_charges[i][None,...], vectorized_input=False)
+        dgsol.solve_distance_geometry(f'{outpath}/{i}')
+        dgsol_end = time.time()
+        lsbuild_coords = lsbuild(f'{outpath}/{i}/0000/dgsol.input')['x']
+        lsbuild_end = time.time()
+        write_xyz(f'{outpath}/{i}/0000/lsbuild.xyz', lsbuild_coords, nuclear_charges[i])
+        print('DGSOL', dgsol_end-dgsol_start)
+        print('lsbuild', lsbuild_end-dgsol_end)
+
+    # natoms [10, 20, 30, 40, 50]
+
+    # Full
+    # DGSOL [0.048, 0.18, 0.42, 1.2, 2.1]
+    # lsbuild base [0.035, 1.63, 19.42, 113.24, 436.78]
+    # lsbuild r-base [0.05, 0.12, 0.58, 1.8, 4.37]
+
+    # Sparse
+    # DGSOL [0.043, 0.16, 0.57, 1.2, 2.2]
+    # lsbuild r-base [0.01, 0.04, 0.07, 0.12, 0.19]
+
+    # Boundaries
+    # DGSOL [0.05, 0.25, 1.6, 8.46, 15.1]
+    # lsbuild r-base [0.15, 0.38, 1.89, 6.41, 13.8]
+
+    import matplotlib.pyplot as plt
+    from matplotlib import ticker
+    natoms = [10, 20, 30, 40, 50]
+
+    fontsize = 15
+    fig, axs = plt.subplots(1, 3, figsize=(15, 7.6),sharey='row')
+
+    axs[0].plot(natoms, [0.048, 0.18, 0.42, 1.2, 2.1], label='Full-DGSOL')
+    # axs[0].plot(natoms, [0.035, 1.63, 19.42, 113.24, 436.78], label='Full-lsbuild')
+    axs[0].plot(natoms, [0.05, 0.12, 0.58, 1.8, 4.37], label='Full-lsbuild')
+
+    axs[1].plot(natoms, [0.043, 0.16, 0.57, 1.2, 2.2], label='Sparse-DGSOL')
+    axs[1].plot(natoms,  [0.01, 0.04, 0.07, 0.12, 0.19], label='Sparse-lsbuild')
+
+    axs[2].plot(natoms, [0.05, 0.25, 1.6, 8.46, 15.1], label='Boundary-DGSOL')
+    axs[2].plot(natoms, [0.15, 0.38, 1.89, 6.41, 13.8], label='Boundary-lsbuild')
+
+    for a in axs.flatten():
+        a.loglog()
+        a.grid(True, which="both", color='#d3d3d3')
+        # plt.setp(a.get_yticklabels(), visible=True)
+        # a.get_yaxis().set_visible(True)
+        a.xaxis.set_major_formatter(ticker.ScalarFormatter())
+        a.xaxis.set_minor_formatter(ticker.ScalarFormatter())
+        a.xaxis.label.set_fontsize(fontsize)
+        a.yaxis.label.set_fontsize(fontsize)
+        a.yaxis.set_tick_params(labelsize=fontsize, which='both', length=6)
+        a.xaxis.set_tick_params(labelsize=fontsize, which='both', length=6)
+
+        a.set(xlabel='Number of atoms', ylabel='Time to Solution [s]')
+        a.legend(prop={'size': fontsize})
+
+    axs[0].set_title('Full Distance Matrix', fontsize=fontsize)
+    axs[1].set_title('Sparse Distance Matrix', fontsize=fontsize)
+    axs[2].set_title('Boundary Distance Matrix', fontsize=fontsize)
+
+    plt.tight_layout()
+    plt.savefig('dgsol_lsbuild_performance.png', dpi=300)
+    plt.show()
+
+
 
 
 if __name__ == '__main__':

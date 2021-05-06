@@ -105,7 +105,7 @@ class Molassembler:
                 if counter >= max_attempts:
                     print('Max tries exceeded')
                     coords.append(np.zeros((len(dist), 3)))
-            gen_coords.append(np.array(coords)[:, np.argsort(r_map)])
+            gen_coords.append(np.array(coords))
             tries.append(counter)
         self.coords = gen_coords
         self.tries = tries
