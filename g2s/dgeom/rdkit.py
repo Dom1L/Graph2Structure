@@ -18,6 +18,8 @@ def graph_to_rdkit(elements, adjacency_matrix, num_heavy_atoms):
         Elements of the molecule (not nuclear charges!).
     adjacency_matrix: np.array, shape(n_atoms, n_atoms)
         Bond order matrix.
+    num_heavy_atoms: integer
+        Number of heavy (non-hydrogen) atoms.
 
     Returns
     -------
@@ -84,7 +86,8 @@ def embed_hydrogens(adjacency_matrix, nuclear_charges, heavy_atom_coords):
         Heavy atom + embedded hydrogen coordinates.
     embedded_nuclear_charges: np.array, shape(n_atoms)
         Full list of nuclear charges including hydrogens.
-
+    embedded_adjacency_matrix: np.array, shape(n_atoms, n_atoms)
+        Adjacency matrix corresponding to heavy and embedded hydrogen atoms.
     """
     num_heavy_atoms=heavy_atom_coords.shape[0]
     elements = [periodic_table[nc] for nc in nuclear_charges]
@@ -108,8 +111,8 @@ def embed_hydrogens(adjacency_matrix, nuclear_charges, heavy_atom_coords):
 
     embedded_coords = mol_h.GetConformer().GetPositions()
     embedded_nuclear_charges = [atom.GetAtomicNum() for atom in mol_h.GetAtoms()]
-    new_adj_mat=GetAdjacencyMatrix(mol_h)
-    return embedded_coords, embedded_nuclear_charges, new_adj_mat
+    embedded_adjacency_matrix=GetAdjacencyMatrix(mol_h)
+    return embedded_coords, embedded_nuclear_charges, embedded_adjacency_matrix
 
 
 
