@@ -50,3 +50,43 @@ def filter_nonzero_distances(padded_distances, nuclear_charges):
         distmat = vector_to_square([padded_distances[i]])[0]
         distances.append(distmat[:n_atoms][:, :n_atoms])
     return np.array(distances, dtype=object)
+
+
+def mae(prediction, reference):
+    return np.mean(np.abs(prediction - reference))
+
+
+def weighted_mean_mae(prediction, reference):
+    """
+    Weighted mean MAE to calculate the true MAE for distance matrices of unequal sizes.
+    Since for the KRR prediction part, a zero padded distance matrix is required
+    (technically not, but makes life easier),
+    blindly calculating the MAE of the G2S prediction will be overly optimistic
+    since zeros are predicted almost perfectly.
+
+    To account for this, a weighted error has to be calculated.
+    This function loops over every distance matrix entry, filters zeros and calculates the true MAE for each entry.
+    The final MAE is calculated by weighting each individual MAE depending on the amount of non zero entries of
+    each distance matrix entry.
+
+    For a distance matrix without zeros, the weighted mean MAE equals the mean MAE.
+
+    """
+    _mae = []
+    n_samples = []
+    for i in range(reference.shape[1]):
+        non_zero_idx = np.where(reference[:, i] != 0.0)[0]
+        if non_zero_idx.size == 0:
+            continue
+        non_zero_pred = prediction[:, i][non_zero_idx]
+        non_zero_ref = reference[:, i][non_zero_idx]
+        _mae.append(mae(non_zero_pred, non_zero_ref))
+        n_samples.append(len(non_zero_idx))
+    _mae = np.array(_mae)
+    n_samples = np.array(n_samples)
+
+    # Total amount datapoints
+    n_total = len(_mae)
+    weights = (n_samples / n_total)
+    return np.sum(weights * _mae) / np.sum(weights)
+
