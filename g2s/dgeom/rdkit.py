@@ -63,7 +63,7 @@ def graph_to_rdkit(elements, adjacency_matrix, num_heavy_atoms):
     return mol
 
 
-def embed_hydrogens(adjacency_matrix, nuclear_charges, heavy_atom_coords):
+def embed_hydrogens(adjacency_matrix, nuclear_charges, heavy_atom_coords, seed=1, maxAttempts=128, useExpTorsionAnglePrefs=False, useBasicKnowledge=False):
     """
     Computes hydrogen positions using RDkits ETKDG algorithm.
     During the embedding, heavy atom coordinates are fixed.
@@ -107,7 +107,7 @@ def embed_hydrogens(adjacency_matrix, nuclear_charges, heavy_atom_coords):
 
     mol_h = Chem.AddHs(mol)
 
-    EmbedMolecule(mol_h, coordMap=coord_map, useRandomCoords=True, ignoreSmoothingFailures=True)
+    EmbedMolecule(mol_h, coordMap=coord_map, useRandomCoords=True, ignoreSmoothingFailures=True, randomSeed=seed, maxAttempts=maxAttempts, useExpTorsionAnglePrefs=useExpTorsionAnglePrefs, useBasicKnowledge=useBasicKnowledge)
 
     embedded_coords = mol_h.GetConformer().GetPositions()
     embedded_nuclear_charges = [atom.GetAtomicNum() for atom in mol_h.GetAtoms()]
