@@ -3,6 +3,7 @@ import subprocess
 
 import numpy as np
 from tqdm import tqdm
+import multiprocessing as mp
 
 from ..utils import vector_to_square
 
@@ -113,7 +114,11 @@ class DGSOL:
         coords = np.array(coords).reshape((n_solutions, n_atoms, 3))
         return coords
 
-    def solve_distance_geometry(self, outpath, n_solutions=10):
+    def check_coords(self, coords):
+        idx = np.where(coords >= 1e4)
+        return np.unique(idx[0])
+
+    def solve_distance_geometry(self, outpath, n_solutions=10, n_cpus=1):
         """
         Interface to solve distance geometry problem.
         Writes input for DGSOL, run's DGSOL and parses coordinates.
@@ -124,23 +129,40 @@ class DGSOL:
             Output directory to write input files and run DGSOL.
         n_solutions: int (default=10)
             Number of solutions to compute with DGSOL.
+        n_cpus: int (default=1)
+            Number of cpus to use.
 
         """
         construction_errors = []
         mol_coordinates = []
-        mol_ids = np.arange(self.distances.shape[0])
-        for i, ids in tqdm(enumerate(mol_ids), total=len(mol_ids)):
-            out = f'{outpath}/{ids:04}'
-            os.makedirs(out, exist_ok=True)
-            self.write_dgsol_input(distances=self.distances[i], outpath=out)
-            self.run_dgsol(out, n_solutions=n_solutions)
-            errors = self.parse_dgsol_errors(out)
-            lowest_errors_idx = np.argsort(errors[:, 2])
-            construction_errors.append(errors[lowest_errors_idx[0]])
-            coords = self.parse_dgsol_coords(out, n_solutions, n_atoms=len(self.nuclear_charges[i]))
-            mol_coordinates.append(coords[lowest_errors_idx[0]])
+
+        jobs = [(outpath, n_solutions, idx) for idx in np.arange(self.distances.shape[0])]
+        with mp.Pool(processes=n_cpus) as pool:
+            for res in tqdm(pool.imap(self.run_reconstruct, jobs), total=len(jobs), desc='DGSOL'):
+                construction_errors.append(res[0])
+                mol_coordinates.append(res[1])
         self.coords = mol_coordinates
-        self.c_errors = np.array(construction_errors)
+        self.c_errors = construction_errors
+
+    def run_reconstruct(self, data):
+        outpath, n_solutions, idx = data
+        n_atoms = len(self.nuclear_charges[idx])
+        out = f'{outpath}/{idx:06}'
+        os.makedirs(out, exist_ok=True)
+        self.write_dgsol_input(distances=self.distances[idx], outpath=out)
+        self.run_dgsol(out, n_solutions=n_solutions)
+        errors = self.parse_dgsol_errors(out)
+        coords = self.parse_dgsol_coords(out, n_solutions, n_atoms=n_atoms)
+        bad_ids = self.check_coords(coords)
+        good_ids = np.setdiff1d(np.arange(n_solutions), bad_ids, assume_unique=True)
+        if good_ids.size == 0:
+            lowest_errors_idx = np.argmin(errors[:, 2])
+            return errors[lowest_errors_idx], np.zeros((n_atoms, 3))
+        else:
+            errors = errors[good_ids]
+            coords = coords[good_ids]
+            lowest_errors_idx = np.argmin(errors[:, 2])
+            return errors[lowest_errors_idx], coords[lowest_errors_idx]
 
     def run_dgsol(self, outpath, n_solutions=10):
         """
