@@ -156,12 +156,12 @@ class DGSOL:
         bad_ids = self.check_coords(coords)
         good_ids = np.setdiff1d(np.arange(n_solutions), bad_ids, assume_unique=True)
         if good_ids.size == 0:
-            lowest_errors_idx = np.argmin(errors[:, 2])
+            lowest_errors_idx = np.nanargmin(errors[:, 2])
             return errors[lowest_errors_idx], np.zeros((n_atoms, 3))
         else:
             errors = errors[good_ids]
             coords = coords[good_ids]
-            lowest_errors_idx = np.argmin(errors[:, 2])
+            lowest_errors_idx = np.nanargmin(errors[:, 2])
             return errors[lowest_errors_idx], coords[lowest_errors_idx]
 
     def run_dgsol(self, outpath, n_solutions=10):
