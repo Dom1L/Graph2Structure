@@ -1,9 +1,10 @@
 import quadpy
 import numpy as np
 
-
-scheme = quadpy.sphere.lebedev_131()
-
+try:
+    scheme = quadpy.sphere.lebedev_131()
+except AttributeError:
+    pass
 
 def lebedev_sphere_opt(bond, points_distances, origin):
     """
