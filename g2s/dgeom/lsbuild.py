@@ -1,3 +1,7 @@
+# This code is based on the Lsbuild implementation of Michael Souza found here: https://gitlab.com/michael143/lsbuild
+# For reference Souza, Michael, et al. "Solving the molecular distance geometry problem with inaccurate distance data." BMC bioinformatics 14.9 (2013): 1-6.
+
+
 import numpy as np
 import networkx as nx
 from numpy import sqrt, zeros, sum
