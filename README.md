@@ -43,12 +43,17 @@ For usage examples, take a look at the tutorials in the example folder!
 ## References
 
 ```
-@misc{2102.02806,
-Author = {Dominik Lemm and Guido Falk von Rudorff and O. Anatole von Lilienfeld},
-Title = {Energy-free machine learning predictions of {\em ab initio} structures},
-Year = {2021},
-Eprint = {arXiv:2102.02806},
+@article{Lemmg2s2021,
+  optdoi = {10.1038/s41467-021-24525-7},
+  opturl = {https://optdoi.org/10.1038/s41467-021-24525-7},
+  year = {2021},
+  month = jul,
+  publisher = {Springer Science and Business Media {LLC}},
+  volume = {12},
+  number = {1},
+  author = {Dominik Lemm and Guido Falk von Rudorff and O. Anatole von Lilienfeld},
+  title = {Machine learning based energy-free structure predictions of molecules,  transition states,  and solids},
+  journal = {Nature Communications}
 }
-
 ```
 
