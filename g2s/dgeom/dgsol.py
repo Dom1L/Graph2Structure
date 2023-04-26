@@ -5,6 +5,7 @@ import numpy as np
 from tqdm import tqdm
 
 from ..utils import vector_to_square
+from ..constants import vdw_radii
 
 
 class DGSOL:
@@ -58,7 +59,7 @@ class DGSOL:
         num = '{:.12f}E{:+03d}'.format(float(a) / 10, int(b) + 1)
         return num[1:]
 
-    def write_dgsol_input(self, distances, outpath):
+    def write_dgsol_input(self, distances, outpath, nuclear_charges):
         """
         Input file writer for DGSOL.
         Basically writes 4 columns such as
@@ -79,8 +80,12 @@ class DGSOL:
         n, m = np.triu_indices(distances.shape[1], k=1)
         with open(f'{outpath}/dgsol.input', 'w') as outfile:
             for i, j in zip(n, m):
+                if distances[i, j] < 0.5:
+                    distances[i, j] = vdw_radii[nuclear_charges[i]] + vdw_radii[nuclear_charges[j]]
+                if distances[j, i] < 0.5:
+                    distances[j, i] = vdw_radii[nuclear_charges[i]] + vdw_radii[nuclear_charges[j]] 
                 outfile.write(
-                    f'{i + 1:9.0f}{j + 1:10.0f}   {self.to_scientific_notation(distances[i, j])}   '
+                    f'{i + 1:9.0f}{j + 1:10.0f}   {self.to_scientific_notation(distances[j, i])}   '
                     f'{self.to_scientific_notation(distances[i, j])}\n')
 
     def parse_dgsol_coords(self, path, n_solutions, n_atoms):
@@ -132,7 +137,7 @@ class DGSOL:
         for i, ids in tqdm(enumerate(mol_ids), total=len(mol_ids)):
             out = f'{outpath}/{ids:04}'
             os.makedirs(out, exist_ok=True)
-            self.write_dgsol_input(distances=self.distances[i], outpath=out)
+            self.write_dgsol_input(distances=self.distances[i], outpath=out, nuclear_charges=self.nuclear_charges[i])
             self.run_dgsol(out, n_solutions=n_solutions)
             errors = self.parse_dgsol_errors(out)
             lowest_errors_idx = np.argsort(errors[:, 2])
